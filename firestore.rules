@@ -1,0 +1,41 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Users collection rules
+    match /users/{userId} {
+      // Allow read if user is authenticated and is either the owner or an admin
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      
+      // Allow create if user is authenticated and is creating their own document
+      allow create: if isAuthenticated() && isOwner(userId) && 
+        request.resource.data.role == 'user' &&
+        request.resource.data.createdAt is timestamp;
+      
+      // Allow update if user is the owner (limited fields) or an admin
+      allow update: if (
+        isOwner(userId) && 
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['name', 'requestDetails', 'communicationLog'])
+      ) || isAdmin();
+      
+      // Only allow admin to delete user documents
+      allow delete: if isAdmin();
+    }
+  }
+} 
