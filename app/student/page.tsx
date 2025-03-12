@@ -1,8 +1,9 @@
 'use client';
 
+import React from 'react';
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { UserData, getUserById, addCommunication } from '@/lib/firestore';
+import { useAuth } from '../../context/AuthContext';
+import { UserData, getUserById, addCommunication, getPendingApplications, processRequest } from '../../lib/firestore';
 import { useRouter } from 'next/navigation';
 
 export default function StudentDashboard() {
@@ -86,7 +87,7 @@ export default function StudentDashboard() {
                 userData.applicationStatus === 'denied' ? 'text-red-600' :
                 'text-yellow-600'
               }`}>
-                {userData.applicationStatus?.charAt(0).toUpperCase() + userData.applicationStatus?.slice(1)}
+                {(userData.applicationStatus || 'pending').charAt(0).toUpperCase() + (userData.applicationStatus || 'pending').slice(1)}
               </p>
             </div>
             
@@ -102,7 +103,7 @@ export default function StudentDashboard() {
                 </div>
                 <div>
                   <p className="font-medium">Date Submitted:</p>
-                  <p>{userData.requestDetails.dateSubmitted.toLocaleDateString()}</p>
+                  <p>{userData.requestDetails.dateSubmitted?.toLocaleDateString() ?? 'Not submitted'}</p>
                 </div>
               </>
             )}
